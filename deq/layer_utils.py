@@ -1,6 +1,7 @@
 '''
 https://github.com/locuslab/deq/blob/master/lib/layer_utils.py
 '''
+import numpy as np
 
 import torch
 import torch.nn.functional as F
