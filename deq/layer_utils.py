@@ -27,13 +27,13 @@ def vec2list(z1, cutoffs):
     return z1_list
 
 
-def conv3x3(in_planes, out_planes, stride=1, bias=False):
+def conv3x3(in_planes, out_planes, stride=1, bias=False, **kwargs):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=bias)
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=bias, **kwargs)
 
-def conv5x5(in_planes, out_planes, stride=1, bias=False):
+def conv5x5(in_planes, out_planes, stride=1, bias=False, **kwargs):
     """5x5 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=5, stride=stride, padding=2, bias=bias)
+    return nn.Conv2d(in_planes, out_planes, kernel_size=5, stride=stride, padding=2, bias=bias, **kwargs)
 
 
 def norm_diff(new, old, show_list=False):

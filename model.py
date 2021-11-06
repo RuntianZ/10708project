@@ -12,18 +12,6 @@ from deq.core.jacobian import jac_loss_estimate, power_method
 from deq.core.solvers import broyden
 
 
-class BranchNet(nn.Module):
-  def __init__(self, blocks):
-    super().__init__()
-    self.blocks = blocks
-
-  def forward(self, x):
-    blocks = self.blocks
-    for i in range(len(blocks)):
-      y = blocks[i](y)
-    return y
-
-
 class MnistGan(nn.Module):
   '''
   Generator and discriminator for MNIST
@@ -47,15 +35,16 @@ class MnistGan(nn.Module):
 
     # Build generator
     self.gen_block_first = nn.Linear(100, 7 * 7 * 64)
-    self.gen_blocks = [
-      [conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.LeakyReLU(0.2)],
-      [conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.LeakyReLU(0.2)],
-    ]
-    self.gen_branches = self._make_branches(self.gen_blocks)
-    self.gen_fuse_blocks = [
-      [self._identity(), self._upsample_module(64, 32)],
-      [self._downsample_module(32, 64), self._identity()],
-    ]  # fuse[i][j] = i -> j
+    self.gen_blocks = nn.ModuleList([
+      nn.Sequential(
+        conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.LeakyReLU(0.2)),
+      nn.Sequential(
+        conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.LeakyReLU(0.2)),
+    ])
+    self.gen_fuse_blocks = nn.ModuleList([
+      nn.ModuleList([nn.Identity(), self._upsample_module(64, 32)]),
+      nn.ModuleList([self._downsample_module(32, 64), nn.Identity()]),
+    ])  # fuse[i][j] = i -> j
     self.gen_block_last = self._upsample_module(32, 1)
     self.gen_shapes = [
       [0, 7, 7, 64],
@@ -64,15 +53,16 @@ class MnistGan(nn.Module):
 
     # Build discriminator
     self.dis_block_first = self._downsample_module(1, 32)
-    self.dis_blocks = [
-      [conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.ReLU()],
-      [conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.ReLU()],
-    ]
-    self.dis_branches = self._make_branches(self.dis_blocks)
-    self.dis_fuse_blocks = [
-      [self._identity(), self._downsample_module(32, 64)],
-      [self._upsample_module(64, 32), self._identity()],
-    ]
+    self.dis_blocks = nn.ModuleList([
+      nn.Sequential(
+        conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.ReLU()),
+      nn.Sequential(
+        conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.ReLU()),
+    ])
+    self.dis_fuse_blocks = nn.ModuleList([
+      nn.ModuleList([nn.Identity(), self._downsample_module(32, 64)]),
+      nn.ModuleList([self._upsample_module(64, 32), nn.Identity()]),
+    ])
     self.dis_block_last = nn.Linear(7 * 7 * 64, 1)
     self.dis_shapes = [
       [0, 14, 14, 32],
@@ -83,9 +73,6 @@ class MnistGan(nn.Module):
     self.b_solver = broyden
     self.hook = None
 
-    
-  def _identity(self):
-    return lambda x: x
   
   def _downsample_module(self, in_chan, out_chan):
     return conv3x3(in_chan, out_chan, stride=2)
@@ -94,15 +81,6 @@ class MnistGan(nn.Module):
     return nn.Sequential(OrderedDict([
       ('conv', nn.Conv2d(in_chan, out_chan, kernel_size=1, bias=False)),
       ('upsample', nn.Upsample(scale_factor=2, mode='nearest'))]))
-
-  def _make_branches(self, blocks):
-    '''
-    Each item in blocks is a list of layers
-    '''
-    branch_blocks = []
-    for b in blocks:
-      branch_blocks.append(BranchNet(b))
-    return nn.ModuleList(branch_blocks)
 
 
   def _forward_step(self, z, gen_injection, dis_injection):

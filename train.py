@@ -44,6 +44,11 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
     optimizer.zero_grad()
     loss.backward()
+    # The generator needs to maximize the loss, so reverse the gradients
+    for name, param in model.named_parameters():
+      if name.startswith('gen') and param.grad is not None:
+        param.grad = -param.grad
+
     optimizer.step()
     if scheduler is not None:
       scheduler.step()
