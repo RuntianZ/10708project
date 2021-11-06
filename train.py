@@ -3,6 +3,7 @@ import time
 import torch
 
 from deq.utils import AverageMeter
+from model import MnistGan
 
 logger = logging.getLogger(__name__)
 PRETRAIN_STEPS = 1000
@@ -34,7 +35,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
     train_steps += 1
     deq_mode = (train_steps > pretrain_steps)
 
-    y, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
+    y, _, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
     prediction = (y > 0).long()
     correct = (prediction == target)
     total_correct += correct
@@ -56,12 +57,48 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   t2 = time.time()
   t = t2 - t1
   acc = total_correct / total_samples
-  msg = 'Elapsed time:  {time}\n' \
-        'Total samples: {sample}\n' \
-        'Accuracy:      {acc}\n' \
-        'Average Loss:  {loss}\n\n'.format(
+  msg = 'Elapsed time:           {time}\n' \
+        'Total Training samples: {sample}\n' \
+        'Training Accuracy:      {acc}\n' \
+        'Average Training Loss:  {loss}\n\n'.format(
           time=t, sample=total_samples, acc=acc, loss=losses.avg
         )
   logger.info(msg)
 
   return train_steps
+
+
+def train(model, data_loader, criterion, optimizer,
+          num_epochs, num_noise, **kwargs):
+  '''
+  Arguments:
+  data_loader:      generates (x, y) (y is not used in training a GAN)
+  num_noise:        number of fake samples each itearation
+  sigma:            sigma of the low-dim Gaussian distribution
+  scheduler:        lr scheduler
+  pretrain_steps:   number of pretraining steps
+  '''
+  model.train()
+  train_steps = 0
+  dim_noise = kwargs.get('dim_noise', MnistGan.DIM_NOISE)
+  sigma = kwargs.get('sigma', 1.0)
+
+  # Build train_loader
+  def train_loader():
+    for _, (x_realimg, y) in enumerate(data_loader):
+      x_noise = torch.randn((num_noise, dim_noise)) * sigma
+      yield x_noise, x_realimg
+
+  for i in range(num_epochs):
+    logger.info('==> Epoch {}\n'.format(i + 1))
+    train_steps = train_epoch(model, train_loader(), criterion, optimizer,
+                              train_steps=train_steps, **kwargs)
+
+
+def generate_imgs(model, num_imgs, dim_noise=None, 
+                  sigma=1.0, deq_mode=True):
+  if dim_noise is None:
+    dim_noise = MnistGan.DIM_NOISE
+  x_noise = torch.randn((num_imgs, dim_noise)) * sigma
+  imgs = model.generate(x_noise, deq_mode=deq_mode)
+  return imgs

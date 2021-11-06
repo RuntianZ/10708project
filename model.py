@@ -20,6 +20,7 @@ class MnistGan(nn.Module):
   '''
 
   # Default configs
+  DIM_NOISE = 100
   NUM_GROUPS = 4
   NUM_LAYERS = 5
   BLOCK_GN_AFFINE = True
@@ -30,11 +31,12 @@ class MnistGan(nn.Module):
   def __init__(self, **kwargs):
     super(MnistGan, self).__init__()
     self.config = kwargs
+    dim_noise = self.config.get('dim_noise', self.DIM_NOISE)
     num_groups = self.config.get('num_groups', self.NUM_GROUPS)
     block_gn_affine = self.config.get('block_gn_affine', self.BLOCK_GN_AFFINE)
 
     # Build generator
-    self.gen_block_first = nn.Linear(100, 7 * 7 * 64)
+    self.gen_block_first = nn.Linear(dim_noise, 7 * 7 * 64)
     self.gen_blocks = nn.ModuleList([
       nn.Sequential(
         conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.LeakyReLU(0.2)),
@@ -136,7 +138,7 @@ class MnistGan(nn.Module):
 
     x_noise: A batch of low-dim Gaussian noise
     x_realimg: A batch of real images
-    deq_mode: If true then use DEQ. Otherwise, use one step of _forward_step()
+    deq_mode: If true then use DEQ. Otherwise, use NUM_LAYERS steps of _forward_step()
 
     '''
     size_noise = x_noise.shape[0]
@@ -195,7 +197,8 @@ class MnistGan(nn.Module):
         def backward_hook(grad):
           if self.hook is not None:
             self.hook.remove()
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+              torch.cuda.synchronize()
           result = self.b_solver(lambda y: autograd.grad(new_z_vec, z_vec, y, retain_graph=True)[0] + grad,
                                  torch.zeros_like(grad),
                                  threshold=b_thres, stop_mode=stop_mode, name='backward')
@@ -207,4 +210,17 @@ class MnistGan(nn.Module):
     new_z_list = vec2list(new_z_vec, cutoffs)
     output = new_z_list[-1].flatten(start_dim=1)
     output = self.dis_block_last(output)
-    return output, jac_loss
+    return output, new_z_list, jac_loss
+
+
+  def generate(self, x_noise, deq_mode=True):
+    '''
+    Generate fake images with the given noise
+    '''
+    s = x_noise.shape
+    s[0] = 0
+    _, z_list, _ = self.forward(x_noise, torch.zeros(s).to(x_noise.device),
+                                deq_mode=deq_mode, compute_jac_loss=False)
+    num_gen_blocks = len(self.gen_blocks)
+    fake_imgs = self.gen_block_last(z_list[num_gen_blocks - 1])
+    return fake_imgs
