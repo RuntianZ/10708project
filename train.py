@@ -7,6 +7,7 @@ from model import MnistGan
 
 logger = logging.getLogger(__name__)
 PRETRAIN_STEPS = 1000
+DEFAULT_SIGMA=1.0
 
 def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   '''
@@ -81,7 +82,7 @@ def train(model, data_loader, criterion, optimizer,
   model.train()
   train_steps = 0
   dim_noise = kwargs.get('dim_noise', MnistGan.DIM_NOISE)
-  sigma = kwargs.get('sigma', 1.0)
+  sigma = kwargs.get('sigma', DEFAULT_SIGMA)
 
   # Build train_loader
   def train_loader():
@@ -95,8 +96,14 @@ def train(model, data_loader, criterion, optimizer,
                               train_steps=train_steps, **kwargs)
 
 
-def generate_imgs(model, num_imgs, dim_noise=None, 
-                  sigma=1.0, deq_mode=True):
+def generate_imgs(model, num_imgs, **kwargs):
+  '''
+  Generate a batch of (num_imgs) fake images.
+  '''
+  dim_noise = kwargs.get('dim_noise', MnistGan.DIM_NOISE)
+  sigma = kwargs.get('sigma', DEFAULT_SIGMA)
+  deq_mode = kwargs.get('deq_mode', True)
+
   if dim_noise is None:
     dim_noise = MnistGan.DIM_NOISE
   x_noise = torch.randn((num_imgs, dim_noise)) * sigma
