@@ -15,8 +15,8 @@ from deq.core.solvers import broyden
 class MnistGan(nn.Module):
   '''
   Generator and discriminator for MNIST
-  Generator: 100 -> (7, 7, 64) -> (14, 14, 32) -> (28, 28, 1)
-  Discriminator: (28, 28, 1) -> (14, 14, 32) -> (7, 7, 64) -> 3136 -> 1
+  Generator: 100 -> (64, 7, 7) -> (32, 14, 14) -> (1, 28, 28)
+  Discriminator: (1, 28, 28) -> (32, 14, 14) -> (64, 7, 7) -> 3136 -> 1
   '''
 
   # Default configs
@@ -31,6 +31,7 @@ class MnistGan(nn.Module):
   def __init__(self, **kwargs):
     super(MnistGan, self).__init__()
     self.config = kwargs
+    self.device = self.config.get('device')
     dim_noise = self.config.get('dim_noise', self.DIM_NOISE)
     num_groups = self.config.get('num_groups', self.NUM_GROUPS)
     block_gn_affine = self.config.get('block_gn_affine', self.BLOCK_GN_AFFINE)
@@ -49,8 +50,8 @@ class MnistGan(nn.Module):
     ])  # fuse[i][j] = i -> j
     self.gen_block_last = self._upsample_module(32, 1)
     self.gen_shapes = [
-      [0, 7, 7, 64],
-      [0, 14, 14, 32],
+      [0, 64, 7, 7],
+      [0, 32, 14, 14],
     ]  # Shapes of block outputs: The first dimension is the batch size (to be filled in later)
 
     # Build discriminator
@@ -67,8 +68,8 @@ class MnistGan(nn.Module):
     ])
     self.dis_block_last = nn.Linear(7 * 7 * 64, 1)
     self.dis_shapes = [
-      [0, 14, 14, 32],
-      [0, 7, 7, 64],
+      [0, 32, 14, 14],
+      [0, 64, 7, 7],
     ]
 
     self.f_solver = broyden
@@ -104,13 +105,15 @@ class MnistGan(nn.Module):
     # Step 1: Per-resolution residual block
     z_block = []
     for i in range(num_gen_blocks):
-      injection = self.gen_block_first(gen_injection) if i == 0 else 0
-      z_block.append(self.gen_branches[i](z[i] + injection))
+      s = self.gen_shapes[0]
+      injection = self.gen_block_first(gen_injection).view(s) if i == 0 else 0
+      z_block.append(self.gen_blocks[i](z[i] + injection))
 
     dis_injection = torch.cat((self.gen_block_last(z[num_gen_blocks - 1]), dis_injection))
     for j in range(num_dis_blocks):
-      injection = self.dis_block_first(dis_injection) if j == 0 else 0
-      z_block.append(self.dis_branches[j](z[num_gen_blocks + j], injection))
+      s = self.dis_shapes[0]
+      injection = self.dis_block_first(dis_injection).view(s) if j == 0 else 0
+      z_block.append(self.dis_blocks[j](z[num_gen_blocks + j] + injection))
 
     
     # Step 2: Multiscale fusion
@@ -145,7 +148,7 @@ class MnistGan(nn.Module):
     size_realimg = x_realimg.shape[0]
     num_gen_blocks = len(self.gen_blocks)
     num_dis_blocks = len(self.dis_blocks)
-    device = x_noise.device
+    device = self.device
     if compute_jac_loss is None:
       compute_jac_loss = self.config.get('compute_jac_loss', True)
     f_thres = self.config.get('f_thres', self.F_THRES)
@@ -160,13 +163,13 @@ class MnistGan(nn.Module):
     
     for j in range(num_dis_blocks):
       s = self.dis_shapes[j]
-      s[0] = size_realimg
+      s[0] = size_realimg + size_noise
       z_list.append(torch.zeros(s).to(device))
 
     z_vec = list2vec(z_list)
-    cutoffs = [(elem.size(1), elem.size(2), elem.size(3)) for elem in z_list]
+    shapes = self.gen_shapes + self.dis_shapes
     # The forward pass function
-    func = lambda z: list2vec(self._forward_step(vec2list(z, cutoffs), x_noise, x_realimg))
+    func = lambda z: list2vec(self._forward_step(vec2list(z, shapes), x_noise, x_realimg))
 
     jac_loss = torch.tensor(0.0).to(device)
 
@@ -187,10 +190,10 @@ class MnistGan(nn.Module):
       with torch.no_grad():
         result = self.f_solver(func, z_vec, threshold=f_thres,
                                stop_mode=stop_mode, name='forward')
-        z_vec = result['result']
+        new_z_vec = result['result']
       
       if self.training:
-        new_z_vec = func(z_vec.requires_grad_())
+        new_z_vec = func(new_z_vec.requires_grad_())
         if compute_jac_loss:
           jac_loss = jac_loss_estimate(new_z_vec, z_vec)
         
@@ -207,7 +210,7 @@ class MnistGan(nn.Module):
         self.hook = new_z_vec.register_hook(backward_hook)
 
     # Compute the logits with the last fc block
-    new_z_list = vec2list(new_z_vec, cutoffs)
+    new_z_list = vec2list(new_z_vec, shapes)
     output = new_z_list[-1].flatten(start_dim=1)
     output = self.dis_block_last(output)
     return output, new_z_list, jac_loss
@@ -219,7 +222,7 @@ class MnistGan(nn.Module):
     '''
     s = x_noise.shape
     s[0] = 0
-    _, z_list, _ = self.forward(x_noise, torch.zeros(s).to(x_noise.device),
+    _, z_list, _ = self.forward(x_noise, torch.zeros(s).to(self.device),
                                 deq_mode=deq_mode, compute_jac_loss=False)
     num_gen_blocks = len(self.gen_blocks)
     fake_imgs = self.gen_block_last(z_list[num_gen_blocks - 1])

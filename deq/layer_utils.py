@@ -9,21 +9,21 @@ import torch.nn as nn
 
 
 def list2vec(z1_list):
-    """Convert list of tensors to a vector"""
-    bsz = z1_list[0].size(0)
-    return torch.cat([elem.reshape(bsz, -1, 1) for elem in z1_list], dim=1)
+    """Convert list of tensors to a flattened vector tensor"""
+    a = torch.cat([elem.reshape(1, -1, 1) for elem in z1_list], dim=1)
+    # print(a.shape)
+    return a
 
 
-def vec2list(z1, cutoffs):
+def vec2list(z1, shapes):
     """Convert a vector back to a list, via the cutoffs specified"""
-    bsz = z1.shape[0]
     z1_list = []
-    start_idx, end_idx = 0, cutoffs[0][0] * cutoffs[0][1] * cutoffs[0][2]
-    for i in range(len(cutoffs)):
-        z1_list.append(z1[:, start_idx:end_idx].view(bsz, *cutoffs[i]))
-        if i < len(cutoffs)-1:
-            start_idx = end_idx
-            end_idx += cutoffs[i + 1][0] * cutoffs[i + 1][1] * cutoffs[i + 1][2]
+    idx = 0
+    # print(shapes)
+    for i in range(len(shapes)):
+        n = np.prod(shapes[i])
+        z1_list.append(z1[:, idx:idx+n, :].view(shapes[i]))
+        idx += n
     return z1_list
 
 

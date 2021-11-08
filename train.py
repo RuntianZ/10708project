@@ -7,7 +7,9 @@ from model import MnistGan
 
 logger = logging.getLogger(__name__)
 PRETRAIN_STEPS = 1000
-DEFAULT_SIGMA=1.0
+DEFAULT_SIGMA = 1.0
+NUM_EPOCHS = 100
+NUM_NOISE = 128
 
 def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   '''
@@ -19,7 +21,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   Returns: train_steps - # training steps up till end of this epoch
   '''
   model.train()
-  device = model.device
+  device = kwargs.get('device')
   train_steps = kwargs.get('train_steps', 0)
   pretrain_steps = kwargs.get('pretrain_steps', PRETRAIN_STEPS)
   scheduler = kwargs.get('scheduler')
@@ -31,7 +33,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
   for _, (x_noise, x_realimg) in enumerate(train_loader):
     x_noise, x_realimg = x_noise.to(device), x_realimg.to(device)
-    target = torch.cat(torch.zeros((len(x_noise),)), torch.ones((len(x_realimg),))).long().to(device)
+    target = torch.cat((torch.zeros((len(x_noise),)), torch.ones((len(x_realimg),)))).long().to(device)
     total_samples += len(x_noise) + len(x_realimg)
     train_steps += 1
     deq_mode = (train_steps > pretrain_steps)
@@ -69,8 +71,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   return train_steps
 
 
-def train(model, data_loader, criterion, optimizer,
-          num_epochs, num_noise, **kwargs):
+def train(model, data_loader, criterion, optimizer, **kwargs):
   '''
   Arguments:
   data_loader:      generates (x, y) (y is not used in training a GAN)
@@ -83,6 +84,8 @@ def train(model, data_loader, criterion, optimizer,
   train_steps = 0
   dim_noise = kwargs.get('dim_noise', MnistGan.DIM_NOISE)
   sigma = kwargs.get('sigma', DEFAULT_SIGMA)
+  num_epochs = kwargs.get('num_epochs', NUM_EPOCHS)
+  num_noise = kwargs.get('num_noise', NUM_NOISE)
 
   # Build train_loader
   def train_loader():
@@ -94,6 +97,8 @@ def train(model, data_loader, criterion, optimizer,
     logger.info('==> Epoch {}\n'.format(i + 1))
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
+
+  return train_steps, num_epochs
 
 
 def generate_imgs(model, num_imgs, **kwargs):

@@ -1,0 +1,17 @@
+{
+  "model_name": "MnistGan",
+  "dim_noise": 100,
+
+  "data_root": "data",
+  "device": "cuda",
+  "num_epochs": 5,
+  "batch_imgs": 128,
+  "batch_noise": 128,
+  "lr": 0.01,
+  "wd": 0.0005,
+  "momentum": 0.9,
+  "scheduler": "10000,20000",
+  "pretrain_steps": 100,
+
+  "save_path": "checkpoint/mnist_gan.pth"
+}
