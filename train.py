@@ -40,7 +40,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
     y, _, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
     prediction = (y > 0).long()
-    correct = (prediction == target)
+    correct = (prediction == target).sum()
     total_correct += correct
 
     loss = criterion(y, target)
