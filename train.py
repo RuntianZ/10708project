@@ -1,6 +1,7 @@
 import logging
 import time
 import torch
+from torch.nn.utils import clip_grad_norm_
 
 from deq.utils import AverageMeter
 from model import MnistGan
@@ -28,6 +29,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   scheduler = kwargs.get('scheduler')
   # Apply a different lr (* gen_factor) to the generator
   gen_factor = kwargs.get('gen_factor', GEN_FACTOR)
+  gradient_clip = kwargs.get('gradient_clip')
 
   losses = AverageMeter()
   total_samples = 0
@@ -62,6 +64,10 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
       optimizer.zero_grad()
       loss.backward()
+
+      if gradient_clip:
+        clip_grad_norm_(model.parameters(), gradient_clip)
+
       # The generator needs to maximize the loss, so reverse the gradients
       for name, param in model.named_parameters():
         if name.startswith('gen') and param.grad is not None:
