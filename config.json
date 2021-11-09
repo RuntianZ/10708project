@@ -3,7 +3,7 @@
   "dim_noise": 100,
 
   "data_root": "data",
-  "device": "cuda",
+  "device": "cpu",
   "num_epochs": 10,
   "batch_imgs": 128,
   "batch_noise": 128,
@@ -17,5 +17,5 @@
 
   "save_path": "checkpoint.pth",
 
-  "model_path": "checkpoin.pth"
+  "model_path": "checkpoint.pth"
 }

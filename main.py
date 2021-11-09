@@ -14,6 +14,8 @@ from model import MnistGan
 from train import train, generate_imgs
 from deq.utils import create_logger
 
+import matplotlib.pyplot as plt
+
 
 class GanLoss(nn.Module):
   def __init__(self):
@@ -26,6 +28,14 @@ class GanLoss(nn.Module):
     if len(loss) == 0:
       return None
     return loss.mean()
+
+
+def recover_imgs(imgs):
+  imgs[imgs < 0] = 0
+  imgs[imgs > 1] = 1
+  imgs *= 255
+  imgs = imgs.int()
+  return imgs
 
 
 def main():
@@ -42,12 +52,14 @@ def main():
     logger.info('Config:\n{}\n'.format(config))
 
   if args.generate:
-    state_dict = torch.load(config['save_path'])
+    state_dict = torch.load(config['save_path'], map_location=torch.device('cpu'))
     model = MnistGan(**config)
     model = model.to(config['device'])
     model.load_state_dict(state_dict['model'])
     imgs = generate_imgs(model, 1)
-    
+    imgs = recover_imgs(imgs).view(28, 28)
+    plt.imshow(imgs)
+    plt.show()
 
 
   else:
