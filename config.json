@@ -17,5 +17,6 @@
 
   "save_path": "checkpoint.pth",
 
-  "model_path": "checkpoint.pth"
+  "model_path": "checkpoint.pth",
+  "deq_mode": 0
 }

@@ -229,7 +229,7 @@ class MnistGan(nn.Module):
     '''
     Generate fake images with the given noise
     '''
-    s = list(x_noise.shape)
+    # s = list(x_noise.shape)
     _, z_list, _ = self.forward(x_noise, torch.zeros((0, 1, 28, 28)).to(self.device),
                                 deq_mode=deq_mode, compute_jac_loss=False)
     num_gen_blocks = len(self.gen_blocks)

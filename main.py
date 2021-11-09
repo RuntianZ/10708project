@@ -23,7 +23,7 @@ class GanLoss(nn.Module):
 
   def forward(self, x, y):
     # y - 0 for fake img, 1 for real img
-    loss = y * F.logsigmoid(-x) + (1 - y) * F.logsigmoid(x)
+    loss = y * F.logsigmoid(-0.001 * x) + (1 - y) * F.logsigmoid(0.001 * x)
     loss = loss[~torch.isnan(loss)]
     if len(loss) == 0:
       return None
@@ -31,6 +31,7 @@ class GanLoss(nn.Module):
 
 
 def recover_imgs(imgs):
+  print(imgs)
   imgs[imgs < 0] = 0
   imgs[imgs > 1] = 1
   imgs *= 255
@@ -56,9 +57,9 @@ def main():
     model = MnistGan(**config)
     model = model.to(config['device'])
     model.load_state_dict(state_dict['model'])
-    imgs = generate_imgs(model, 1)
+    imgs = generate_imgs(model, 1, **config)
     imgs = recover_imgs(imgs).view(28, 28)
-    plt.imshow(imgs)
+    plt.imshow(imgs, cmap='Greys')
     plt.show()
 
 
