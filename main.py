@@ -23,7 +23,10 @@ class GanLoss(nn.Module):
 
   def forward(self, x, y):
     # y - 0 for fake img, 1 for real img
-    loss = y * F.logsigmoid(-0.001 * x) + (1 - y) * F.logsigmoid(0.001 * x)
+    if torch.isinf(x).sum() > 0:
+      print(x)
+      raise RuntimeError
+    loss = y * F.logsigmoid(-x) + (1 - y) * F.logsigmoid(x)
     loss = loss[~torch.isnan(loss)]
     if len(loss) == 0:
       return None
