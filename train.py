@@ -118,6 +118,12 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
 
   for i in range(num_epochs):
     logger.info('==> Epoch {}\n'.format(i + 1))
+
+    if i >= 20:
+      logger.info('Generator fixed\n')
+      kwargs['gen_factor'] = 0.0
+
+
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
 
