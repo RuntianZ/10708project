@@ -22,13 +22,16 @@ class GanLoss(nn.Module):
   def forward(self, x, y):
     # y - 0 for fake img, 1 for real img
     loss = y * F.logsigmoid(-x) + (1 - y) * F.logsigmoid(x)
-    loss = loss.mean()
-    return loss
+    loss = loss[~torch.isnan(loss)]
+    if len(loss) == 0:
+      return None
+    return loss.mean()
 
 
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('config_file', type=str)
+  parser.add_argument('--generate', default=False, action='store_true')
   args = parser.parse_args()
 
   config_file = args.config_file
@@ -38,32 +41,43 @@ def main():
     config = json.loads(s)
     logger.info('Config:\n{}\n'.format(config))
 
-  transform_train = transforms.Compose([transforms.ToTensor()])
-  dataset_train = MNIST(root=config['data_root'], download=True, transform=transform_train)
-  loader_train = DataLoader(dataset_train, batch_size=config['batch_imgs'],
-                            shuffle=True, num_workers=4)
+  if args.generate:
+    state_dict = torch.load(config['save_path'])
+    model = MnistGan(**config)
+    model = model.to(config['device'])
+    model.load_state_dict(state_dict['model'])
+    imgs = generate_imgs(model, 1)
+    
 
-  model = MnistGan(**config)
-  model = model.to(config['device'])
-  optimizer = SGD(model.parameters(), lr=config['lr'], weight_decay=config['wd'],
-                  momentum=config['momentum'])
-  criterion = GanLoss()
-  if config.get('scheduler'):
-    milestones = config['scheduler'].split(',')
-    milestones = [int(s) for s in milestones]
-    scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
-    config['scheduler'] = scheduler
 
-  train_steps, num_epochs = train(model, loader_train, criterion, optimizer, **config)
+  else:
 
-  if config.get('save_path'):
-    state_dict = {
-      'model': model.state_dict(),
-      'optimizer': optimizer.state_dict(),
-      'train_steps': train_steps,
-      'epochs': num_epochs,
-    }
-    torch.save(state_dict, config['save_path'])
+    transform_train = transforms.Compose([transforms.ToTensor()])
+    dataset_train = MNIST(root=config['data_root'], download=True, transform=transform_train)
+    loader_train = DataLoader(dataset_train, batch_size=config['batch_imgs'],
+                              shuffle=True, num_workers=4, drop_last=True)
+
+    model = MnistGan(**config)
+    model = model.to(config['device'])
+    optimizer = SGD(model.parameters(), lr=config['lr'], weight_decay=config['wd'],
+                    momentum=config['momentum'])
+    criterion = GanLoss()
+    if config.get('scheduler'):
+      milestones = config['scheduler'].split(',')
+      milestones = [int(s) for s in milestones]
+      scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+      config['scheduler'] = scheduler
+
+    train_steps, num_epochs = train(model, loader_train, criterion, optimizer, **config)
+
+    if config.get('save_path'):
+      state_dict = {
+        'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'train_steps': train_steps,
+        'epochs': num_epochs,
+      }
+      torch.save(state_dict, config['save_path'])
 
 if __name__ == '__main__':
   main()

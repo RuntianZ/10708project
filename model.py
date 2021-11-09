@@ -40,9 +40,13 @@ class MnistGan(nn.Module):
     self.gen_block_first = nn.Linear(dim_noise, 7 * 7 * 64)
     self.gen_blocks = nn.ModuleList([
       nn.Sequential(
-        conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.LeakyReLU(0.2)),
+        conv3x3(64, 64), 
+        # nn.GroupNorm(num_groups, 64, affine=block_gn_affine), 
+        nn.LeakyReLU(0.2)),
       nn.Sequential(
-        conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.LeakyReLU(0.2)),
+        conv3x3(32, 32), 
+        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine), 
+        nn.LeakyReLU(0.2)),
     ])
     self.gen_fuse_blocks = nn.ModuleList([
       nn.ModuleList([nn.Identity(), self._upsample_module(64, 32)]),
@@ -58,9 +62,13 @@ class MnistGan(nn.Module):
     self.dis_block_first = self._downsample_module(1, 32)
     self.dis_blocks = nn.ModuleList([
       nn.Sequential(
-        conv3x3(32, 32), nn.GroupNorm(num_groups, 32, affine=block_gn_affine), nn.ReLU()),
+        conv3x3(32, 32), 
+        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine), 
+        nn.ReLU()),
       nn.Sequential(
-        conv3x3(64, 64), nn.GroupNorm(num_groups, 64, affine=block_gn_affine), nn.ReLU()),
+        conv3x3(64, 64),
+        #  nn.GroupNorm(num_groups, 64, affine=block_gn_affine), 
+         nn.ReLU()),
     ])
     self.dis_fuse_blocks = nn.ModuleList([
       nn.ModuleList([nn.Identity(), self._downsample_module(32, 64)]),
@@ -190,7 +198,8 @@ class MnistGan(nn.Module):
       with torch.no_grad():
         result = self.f_solver(func, z_vec, threshold=f_thres,
                                stop_mode=stop_mode, name='forward')
-        new_z_vec = result['result']
+        z_vec = result['result']
+        new_z_vec = z_vec
       
       if self.training:
         new_z_vec = func(new_z_vec.requires_grad_())

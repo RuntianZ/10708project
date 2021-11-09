@@ -10,6 +10,7 @@ PRETRAIN_STEPS = 1000
 DEFAULT_SIGMA = 1.0
 NUM_EPOCHS = 100
 NUM_NOISE = 128
+GEN_FACTOR = 1.0
 
 def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   '''
@@ -25,6 +26,8 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   train_steps = kwargs.get('train_steps', 0)
   pretrain_steps = kwargs.get('pretrain_steps', PRETRAIN_STEPS)
   scheduler = kwargs.get('scheduler')
+  # Apply a different lr (* gen_factor) to the generator
+  gen_factor = kwargs.get('gen_factor', GEN_FACTOR)
 
   losses = AverageMeter()
   total_samples = 0
@@ -38,22 +41,36 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
     train_steps += 1
     deq_mode = (train_steps > pretrain_steps)
 
+    img_noise = torch.randn_like(x_realimg) * 0.05
+    x_realimg += img_noise
+
     y, _, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
+    y = y.flatten()
     prediction = (y > 0).long()
-    correct = (prediction == target).sum()
-    total_correct += correct
+    a = (prediction == target)
+    correct = a.sum()
+    total_correct += correct.item()
+
+    correct_fake = a[:len(x_noise)].sum().item()
+    correct_real = a[len(x_noise):].sum().item()
+    # print('{}\t{}\t{}'.format(train_steps, correct_fake, correct_real))
 
     loss = criterion(y, target)
-    losses.update(loss.item(), len(x_noise) + len(x_realimg))
+    if loss:
+      # print(loss.item())
+      losses.update(loss.item(), len(x_noise) + len(x_realimg))
 
-    optimizer.zero_grad()
-    loss.backward()
-    # The generator needs to maximize the loss, so reverse the gradients
-    for name, param in model.named_parameters():
-      if name.startswith('gen') and param.grad is not None:
-        param.grad = -param.grad
+      optimizer.zero_grad()
+      loss.backward()
+      # The generator needs to maximize the loss, so reverse the gradients
+      for name, param in model.named_parameters():
+        if name.startswith('gen') and param.grad is not None:
+          # print(name)
+          param.grad = -param.grad * gen_factor
+        # if name.startswith('dis') and param.grad is not None:
+        #   param.grad *= 0
 
-    optimizer.step()
+      optimizer.step()
     if scheduler is not None:
       scheduler.step()
 
