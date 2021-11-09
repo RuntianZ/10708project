@@ -7,6 +7,7 @@ from deq.utils import AverageMeter
 from model import MnistGan
 
 logger = logging.getLogger(__name__)
+FIX_GEN = 1
 PRETRAIN_STEPS = 1000
 DEFAULT_SIGMA = 1.0
 NUM_EPOCHS = 100
@@ -55,7 +56,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
     correct_fake = a[:len(x_noise)].sum().item()
     correct_real = a[len(x_noise):].sum().item()
-    # print('{}\t{}\t{}'.format(train_steps, correct_fake, correct_real))
+    print('{}\t{}\t{}'.format(train_steps, correct_fake, correct_real))
 
     loss = criterion(y, target)
     if loss:
@@ -110,6 +111,8 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   num_epochs = kwargs.get('num_epochs', NUM_EPOCHS)
   num_noise = kwargs.get('num_noise', NUM_NOISE)
 
+  global fgen
+
   # Build train_loader
   def train_loader():
     for _, (x_realimg, y) in enumerate(data_loader):
@@ -119,10 +122,11 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   for i in range(num_epochs):
     logger.info('==> Epoch {}\n'.format(i + 1))
 
-    if i >= 20:
+    if i >= FIX_GEN:
       logger.info('Generator fixed\n')
-      kwargs['gen_factor'] = 0.0
-
+      for name, param in model.named_parameters():
+        if name.startswith('gen'):
+          param.requires_grad = False
 
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)

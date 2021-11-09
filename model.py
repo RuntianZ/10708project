@@ -54,8 +54,8 @@ class MnistGan(nn.Module):
     ])  # fuse[i][j] = i -> j
     self.gen_block_last = self._upsample_module(32, 1)
     self.gen_shapes = [
-      [0, 64, 7, 7],
-      [0, 32, 14, 14],
+      [-1, 64, 7, 7],
+      [-1, 32, 14, 14],
     ]  # Shapes of block outputs: The first dimension is the batch size (to be filled in later)
 
     # Build discriminator
@@ -76,8 +76,8 @@ class MnistGan(nn.Module):
     ])
     self.dis_block_last = nn.Linear(7 * 7 * 64, 1)
     self.dis_shapes = [
-      [0, 32, 14, 14],
-      [0, 64, 7, 7],
+      [-1, 32, 14, 14],
+      [-1, 64, 7, 7],
     ]
 
     self.f_solver = broyden
@@ -118,6 +118,7 @@ class MnistGan(nn.Module):
       z_block.append(self.gen_blocks[i](z[i] + injection))
 
     dis_injection = torch.cat((self.gen_block_last(z[num_gen_blocks - 1]), dis_injection))
+    # print(dis_injection.shape)
     for j in range(num_dis_blocks):
       s = self.dis_shapes[0]
       injection = self.dis_block_first(dis_injection).view(s) if j == 0 else 0
