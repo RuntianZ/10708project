@@ -79,10 +79,11 @@ def main():
 
   else:
 
+    train_target = config.get('train_target', 2)
     transform_train = transforms.Compose([transforms.ToTensor()])
     dataset_train = MNIST(root=config['data_root'], download=True, transform=transform_train)
-    dataset_train.data = dataset_train.data[dataset_train.targets == 1]
-    dataset_train.targets = dataset_train.targets[dataset_train.targets == 1]
+    dataset_train.data = dataset_train.data[dataset_train.targets == train_target]
+    dataset_train.targets = dataset_train.targets[dataset_train.targets == train_target]
     loader_train = DataLoader(dataset_train, batch_size=config['batch_imgs'],
                               shuffle=True, num_workers=4, drop_last=True)
 
