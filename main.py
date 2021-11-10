@@ -26,9 +26,12 @@ class GanLoss(nn.Module):
     if torch.isinf(x).sum() > 0:
       print(x)
       raise RuntimeError
-    x[x > 5] = 5
+    x0 = x.clone()
+    x0[x0 > 5] = 5
+    l0 = F.logsigmoid(-x0)
     x[x < -5] = -5
-    loss = y * F.logsigmoid(-x) + (1 - y) * F.logsigmoid(x)
+    l1 = F.logsigmoid(x)
+    loss = y * l0 + (1 - y) * l1
     loss = loss[~torch.isnan(loss)]
     if len(loss) == 0:
       return None
