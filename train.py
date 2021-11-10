@@ -147,11 +147,11 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
                               train_steps=train_steps, **kwargs)
 
     if weight_clip:
-      for p in model.parameters():
-        # if name.startswith('dis'):
-        pn = p.norm(p=2)
-        if pn > weight_clip:
-          p.data = p.data / pn * weight_clip
+      for name, p in model.named_parameters():
+        if name.startswith('dis'):
+          pn = p.norm(p=2)
+          if pn > weight_clip:
+            p.data = p.data / pn * weight_clip
 
   return train_steps, num_epochs
 
