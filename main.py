@@ -18,8 +18,9 @@ import matplotlib.pyplot as plt
 
 
 class GanLoss(nn.Module):
-  def __init__(self):
+  def __init__(self, hinge):
     super(GanLoss, self).__init__()
+    self.hinge = hinge
 
   def forward(self, x, y):
     # y - 0 for fake img, 1 for real img
@@ -27,9 +28,9 @@ class GanLoss(nn.Module):
       print(x)
       raise RuntimeError
     x0 = x.clone()
-    x0[x0 > 5] = 5
+    x0[x0 > self.hinge] = self.hinge
     l0 = F.logsigmoid(-x0)
-    x[x < -5] = -5
+    x[x < -self.hinge] = -self.hinge
     l1 = F.logsigmoid(x)
     loss = y * l0 + (1 - y) * l1
     # loss = loss[~torch.isnan(loss)]
@@ -89,7 +90,8 @@ def main():
     model = model.to(config['device'])
     optimizer = SGD(model.parameters(), lr=config['lr'], weight_decay=config['wd'],
                     momentum=config['momentum'])
-    criterion = GanLoss()
+    hinge = config.get('hinge', 5.0)
+    criterion = GanLoss(hinge)
     if config.get('scheduler'):
       milestones = config['scheduler'].split(',')
       milestones = [int(s) for s in milestones]
