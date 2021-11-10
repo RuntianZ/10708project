@@ -31,7 +31,7 @@ class GanLoss(nn.Module):
     # l0 = F.logsigmoid(-x0)
     # x[x < -5] = -5
     # l1 = F.logsigmoid(x)
-    loss = y * F.logsigmoid(-x[x <= 5]) + (1 - y) * F.logsigmoid(x[x >= -5])
+    loss = y * F.logsigmoid(-x[x <= 5]).mean() + (1 - y) * F.logsigmoid(x[x >= -5]).mean()
     # loss = loss[~torch.isnan(loss)]
     # if len(loss) == 0:
     #   return None
