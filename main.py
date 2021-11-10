@@ -62,7 +62,7 @@ def main():
     logger.info('Config:\n{}\n'.format(config))
 
   if args.generate:
-    state_dict = torch.load(config['save_path'])
+    state_dict = torch.load(config['model_path'])
     model = MnistGan(**config)
     model = model.to(config['device'])
     model.load_state_dict(state_dict['model'])
