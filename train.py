@@ -49,6 +49,8 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
       # Augment real images with Gaussian noise
       img_noise = torch.randn_like(x_realimg) * aug_noise
       x_realimg += img_noise
+      x_realimg[x_realimg < 0] = 0
+      x_realimg[x_realimg > 1] = 1
 
     y, _, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
     y = y.flatten()
