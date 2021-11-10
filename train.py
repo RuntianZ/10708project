@@ -31,6 +31,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   # Apply a different lr (* gen_factor) to the generator
   gen_factor = kwargs.get('gen_factor', GEN_FACTOR)
   gradient_clip = kwargs.get('gradient_clip')
+  aug_noise = kwargs.get('aug_noise')
 
   losses = AverageMeter()
   total_samples = 0
@@ -44,8 +45,10 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
     train_steps += 1
     deq_mode = (train_steps > pretrain_steps)
 
-    img_noise = torch.randn_like(x_realimg) * 0.05
-    x_realimg += img_noise
+    if aug_noise:
+      # Augment real images with Gaussian noise
+      img_noise = torch.randn_like(x_realimg) * aug_noise
+      x_realimg += img_noise
 
     y, _, _ = model(x_noise, x_realimg, deq_mode=deq_mode, compute_jac_loss=False)
     y = y.flatten()
