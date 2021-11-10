@@ -33,6 +33,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
   gen_factor = kwargs.get('gen_factor', GEN_FACTOR)
   gradient_clip = kwargs.get('gradient_clip')
   aug_noise = kwargs.get('aug_noise')
+  weight_clip = kwargs.get('weight_clip')
 
   losses = AverageMeter()
   total_samples = 0
@@ -84,6 +85,12 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
         #   param.grad *= 0
 
       optimizer.step()
+      if weight_clip:
+        for name, p in model.named_parameters():
+          if name.startswith('dis'):
+            pn = p.norm(p=2)
+            if pn > weight_clip:
+              p.data = p.data / pn * weight_clip
     if scheduler is not None:
       scheduler.step()
 
@@ -145,13 +152,6 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
 
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
-
-    if weight_clip:
-      for name, p in model.named_parameters():
-        if name.startswith('dis'):
-          pn = p.norm(p=2)
-          if pn > weight_clip:
-            p.data = p.data / pn * weight_clip
 
   return train_steps, num_epochs
 
