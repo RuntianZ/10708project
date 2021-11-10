@@ -144,9 +144,12 @@ def generate_imgs(model, num_imgs, **kwargs):
   dim_noise = kwargs.get('dim_noise', MnistGan.DIM_NOISE)
   sigma = kwargs.get('sigma', DEFAULT_SIGMA)
   deq_mode = kwargs.get('deq_mode', True)
+  device = kwargs.get('device')
 
   if dim_noise is None:
     dim_noise = MnistGan.DIM_NOISE
   x_noise = torch.randn((num_imgs, dim_noise)) * sigma
+  x_noise = x_noise.to(device)
   imgs = model.generate(x_noise, deq_mode=deq_mode)
+  imgs = imgs.detach().cpu()
   return imgs

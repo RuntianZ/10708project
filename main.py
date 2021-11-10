@@ -34,7 +34,7 @@ class GanLoss(nn.Module):
 
 
 def recover_imgs(imgs):
-  print(imgs)
+  # print(imgs)
   imgs[imgs < 0] = 0
   imgs[imgs > 1] = 1
   imgs *= 255
@@ -56,10 +56,15 @@ def main():
     logger.info('Config:\n{}\n'.format(config))
 
   if args.generate:
-    state_dict = torch.load(config['save_path'], map_location=torch.device('cpu'))
+    state_dict = torch.load(config['save_path'])
     model = MnistGan(**config)
     model = model.to(config['device'])
     model.load_state_dict(state_dict['model'])
+    # for name, param in model.named_parameters():
+    #   print(name)
+    #   print(param)
+    #   print()
+
     imgs = generate_imgs(model, 1, **config)
     imgs = recover_imgs(imgs).view(28, 28)
     plt.imshow(imgs, cmap='Greys')
