@@ -110,8 +110,7 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   sigma = kwargs.get('sigma', DEFAULT_SIGMA)
   num_epochs = kwargs.get('num_epochs', NUM_EPOCHS)
   num_noise = kwargs.get('num_noise', NUM_NOISE)
-
-  global fgen
+  weight_clip = kwargs.get('weight_clip')
 
   # Build train_loader
   def train_loader():
@@ -122,14 +121,18 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   for i in range(num_epochs):
     logger.info('==> Epoch {}\n'.format(i + 1))
 
-    if i >= FIX_GEN:
-      logger.info('Generator fixed\n')
-      for name, param in model.named_parameters():
-        if name.startswith('gen'):
-          param.requires_grad = False
+    # if i >= FIX_GEN:
+    #   logger.info('Generator fixed\n')
+    #   for name, param in model.named_parameters():
+    #     if name.startswith('gen'):
+    #       param.requires_grad = False
 
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
+
+    if weight_clip:
+      for p in model.parameters():
+        p = p / p.norm(p=2) * weight_clip
 
   return train_steps, num_epochs
 

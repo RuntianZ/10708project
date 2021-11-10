@@ -15,6 +15,7 @@
   "gen_factor" : 0.1,
   "sigma" : 0.1,
   "gradient_clip": 1.0,
+  "weight_clip" : 1.0,
 
   "save_path": "checkpoint.pth",
 
