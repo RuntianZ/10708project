@@ -118,6 +118,8 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   num_noise = kwargs.get('num_noise', NUM_NOISE)
   weight_clip = kwargs.get('weight_clip')
 
+  opt_state = optimizer.state_dict()
+
   # Build train_loader
   def train_loader():
     for _, (x_realimg, y) in enumerate(data_loader):
@@ -127,17 +129,19 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   for i in range(num_epochs):
     logger.info('==> Epoch {}\n'.format(i + 1))
 
-    if i >= FIX_GEN:
+    if i == FIX_GEN:
       logger.info('Generator fixed\n')
       for name, param in model.named_parameters():
         if name.startswith('gen'):
           param.requires_grad = False
+      optimizer.load_state_dict(opt_state)
 
-    if i >= DIS_GEN:
+    if i == DIS_GEN:
       logger.info('Discriminator fixed\n')
       for name, param in model.named_parameters():
         if name.startswith('dis'):
           param.requires_grad = False
+      optimizer.load_state_dict(opt_state)
 
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
