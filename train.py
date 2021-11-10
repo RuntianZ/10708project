@@ -7,7 +7,8 @@ from deq.utils import AverageMeter
 from model import MnistGan
 
 logger = logging.getLogger(__name__)
-FIX_GEN = 1
+FIX_GEN = 10000
+DIS_GEN = 50
 PRETRAIN_STEPS = 1000
 DEFAULT_SIGMA = 1.0
 NUM_EPOCHS = 100
@@ -126,11 +127,17 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
   for i in range(num_epochs):
     logger.info('==> Epoch {}\n'.format(i + 1))
 
-    # if i >= FIX_GEN:
-    #   logger.info('Generator fixed\n')
-    #   for name, param in model.named_parameters():
-    #     if name.startswith('gen'):
-    #       param.requires_grad = False
+    if i >= FIX_GEN:
+      logger.info('Generator fixed\n')
+      for name, param in model.named_parameters():
+        if name.startswith('gen'):
+          param.requires_grad = False
+
+    if i >= DIS_GEN:
+      logger.info('Discriminator fixed\n')
+      for name, param in model.named_parameters():
+        if name.startswith('dis'):
+          param.requires_grad = False
 
     train_steps = train_epoch(model, train_loader(), criterion, optimizer,
                               train_steps=train_steps, **kwargs)
