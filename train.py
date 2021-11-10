@@ -61,7 +61,7 @@ def train_epoch(model, train_loader, criterion, optimizer, **kwargs):
 
     correct_fake = a[:len(x_noise)].sum().item()
     correct_real = a[len(x_noise):].sum().item()
-    print('{}\t{}\t{}'.format(train_steps, correct_fake, correct_real))
+    # print('{}\t{}\t{}'.format(train_steps, correct_fake, correct_real))
 
     loss = criterion(y, target)
     if loss:
