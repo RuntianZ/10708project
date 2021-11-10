@@ -8,7 +8,7 @@ from model import MnistGan
 
 logger = logging.getLogger(__name__)
 FIX_GEN = 10000
-DIS_GEN = 50
+DIS_GEN = 5000
 PRETRAIN_STEPS = 1000
 DEFAULT_SIGMA = 1.0
 NUM_EPOCHS = 100
