@@ -139,7 +139,7 @@ def train(model, data_loader, criterion, optimizer, **kwargs):
       for p in model.parameters():
         pn = p.norm(p=2)
         if pn > weight_clip:
-        p.data = p.data / pn * weight_clip
+          p.data = p.data / pn * weight_clip
 
   return train_steps, num_epochs
 
