@@ -63,11 +63,11 @@ class MnistGan(nn.Module):
     self.dis_blocks = nn.ModuleList([
       nn.Sequential(
         conv3x3(32, 32), 
-        nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
+        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
         nn.ReLU()),
       nn.Sequential(
         conv3x3(64, 64),
-         nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
+         # nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
          nn.ReLU()),
     ])
     self.dis_fuse_blocks = nn.ModuleList([
