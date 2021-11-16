@@ -41,11 +41,11 @@ class MnistGan(nn.Module):
     self.gen_blocks = nn.ModuleList([
       nn.Sequential(
         conv3x3(64, 64), 
-        nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
+        # nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
         nn.LeakyReLU(0.2)),
       nn.Sequential(
         conv3x3(32, 32), 
-        nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
+        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
         nn.LeakyReLU(0.2)),
     ])
     self.gen_fuse_blocks = nn.ModuleList([
