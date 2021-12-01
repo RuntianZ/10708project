@@ -164,6 +164,7 @@ def generate_imgs(model, num_imgs, **kwargs):
   sigma = kwargs.get('sigma', DEFAULT_SIGMA)
   deq_mode = kwargs.get('deq_mode', True)
   device = kwargs.get('device')
+  model.eval()
 
   if dim_noise is None:
     dim_noise = MnistGan.DIM_NOISE

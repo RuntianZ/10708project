@@ -1,9 +1,10 @@
 {
   "model_name": "MnistGan",
   "dim_noise": 100,
+  "num_layers": 3,
 
   "data_root": "data",
-  "device": "cuda",
+  "device": "cpu",
   "num_epochs": 500,
   "batch_imgs": 128,
   "batch_noise": 128,
@@ -20,6 +21,6 @@
 
   "save_path": "checkpoint.pth",
 
-  "model_path": "checkpoint.pth",
+  "model_path": "checkpoint_tanh.pth",
   "deq_mode": 0
 }
