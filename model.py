@@ -52,7 +52,7 @@ class MnistGan(nn.Module):
     #   nn.ModuleList([nn.Identity(), self._upsample_module(64, 32)]),
     #   nn.ModuleList([self._downsample_module(32, 64), nn.Identity()]),
     # ])  # fuse[i][j] = i -> j
-    self.gen_block_last = nn.Linear(1000, (1, 28, 28))
+    self.gen_block_last = nn.Linear(1000, 784)
     self.gen_shapes = [
       [-1, 1000],
       # [-1, 64, 7, 7],
@@ -60,7 +60,7 @@ class MnistGan(nn.Module):
     ]  # Shapes of block outputs: The first dimension is the batch size (to be filled in later)
 
     # Build discriminator
-    self.dis_block_first = nn.Linear((1, 28, 28), 100)
+    self.dis_block_first = nn.Linear(784, 100)
     self.dis_blocks = nn.ModuleList([
       nn.Sequential(
         nn.Linear(100, 100), 
@@ -119,7 +119,7 @@ class MnistGan(nn.Module):
       injection = self.gen_block_first(gen_injection).view(s) if i == 0 else self.gen_fuse_blocks[i-1][i](z_block[i-1])
       z_block.append(self.gen_blocks[i](z[i] + injection))
 
-    dis_injection = torch.cat((self.gen_block_last(z[num_gen_blocks - 1]), dis_injection))
+    dis_injection = torch.cat((self.gen_block_last(z[num_gen_blocks - 1]).view(-1, 1, 28, 28), dis_injection))
     # print(dis_injection.shape)
     for j in range(num_dis_blocks):
       s = self.dis_shapes[0]
@@ -236,5 +236,5 @@ class MnistGan(nn.Module):
     _, z_list, _ = self.forward(x_noise, torch.zeros((0, 1, 28, 28)).to(self.device),
                                 deq_mode=deq_mode, compute_jac_loss=False)
     num_gen_blocks = len(self.gen_blocks)
-    fake_imgs = self.gen_block_last(z_list[num_gen_blocks - 1])
+    fake_imgs = self.gen_block_last(z_list[num_gen_blocks - 1]).view(-1, 1, 28, 28)
     return fake_imgs
