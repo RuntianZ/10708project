@@ -40,7 +40,7 @@ class MnistGan(nn.Module):
     self.gen_block_first = nn.Linear(dim_noise, 1000)
     self.gen_blocks = nn.ModuleList([
       nn.Sequential(
-        nn.Linear(1000, 1000), 
+        nn.Linear(1000, 1000),
         # nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
         nn.Tanh()),
       # nn.Sequential(
@@ -60,12 +60,12 @@ class MnistGan(nn.Module):
     ]  # Shapes of block outputs: The first dimension is the batch size (to be filled in later)
 
     # Build discriminator
-    self.dis_block_first = nn.Linear(784, 100)
+    self.dis_block_first = nn.Linear(784, 500)
     self.dis_blocks = nn.ModuleList([
       nn.Sequential(
-        nn.Linear(100, 100), 
+        nn.Linear(500, 500),
         # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
-        nn.ReLU()),
+        nn.Tanh()),
       # nn.Sequential(
       #   conv3x3(64, 64),
       #    nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
@@ -75,9 +75,9 @@ class MnistGan(nn.Module):
     #   nn.ModuleList([nn.Identity(), self._downsample_module(32, 64)]),
     #   nn.ModuleList([self._upsample_module(64, 32), nn.Identity()]),
     # ])
-    self.dis_block_last = nn.Linear(100, 1)
+    self.dis_block_last = nn.Linear(500, 1)
     self.dis_shapes = [
-      [-1, 100],
+      [-1, 500],
       # [-1, 32, 14, 14],
       # [-1, 64, 7, 7],
     ]

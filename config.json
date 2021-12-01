@@ -4,23 +4,22 @@
   "num_layers": 5,
 
   "data_root": "data",
-  "device": "cpu",
-  "num_epochs": 100,
+  "device": "cuda",
+  "num_epochs": 500,
   "batch_imgs": 128,
   "batch_noise": 128,
-  "lr": 0.001,
-  "wd": 0.1,
+  "lr": 0.0001,
+  "wd": 0.01,
   "momentum": 0.9,
   "scheduler": "10000000000",
-  "pretrain_steps": 100,
+  "pretrain_steps": 10000000000,
   "gen_factor" : 1.0,
   "sigma" : 0.1,
   "gradient_clip": 1.0,
-  "weight_clip" : 1.0,
   "aug_noise": 0.005,
 
   "save_path": "checkpoint_deq.pth",
 
   "model_path": "checkpoint_deq.pth",
-  "deq_mode": 1
+  "deq_mode": 0
 }

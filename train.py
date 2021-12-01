@@ -7,7 +7,7 @@ from deq.utils import AverageMeter
 from model import MnistGan
 
 logger = logging.getLogger(__name__)
-FIX_GEN = 100000
+FIX_GEN = 1500
 DIS_GEN = 5000
 PRETRAIN_STEPS = 1000
 DEFAULT_SIGMA = 1.0
