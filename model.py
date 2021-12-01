@@ -37,47 +37,49 @@ class MnistGan(nn.Module):
     block_gn_affine = self.config.get('block_gn_affine', self.BLOCK_GN_AFFINE)
 
     # Build generator
-    self.gen_block_first = nn.Linear(dim_noise, 7 * 7 * 64)
+    self.gen_block_first = nn.Linear(dim_noise, 1000)
     self.gen_blocks = nn.ModuleList([
       nn.Sequential(
-        conv3x3(64, 64), 
+        nn.Linear(1000, 1000), 
         # nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
         nn.Tanh()),
-      nn.Sequential(
-        conv3x3(32, 32), 
-        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
-        nn.Tanh()),
+      # nn.Sequential(
+      #   conv3x3(32, 32), 
+      #   # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
+      #   nn.Tanh()),
     ])
-    self.gen_fuse_blocks = nn.ModuleList([
-      nn.ModuleList([nn.Identity(), self._upsample_module(64, 32)]),
-      nn.ModuleList([self._downsample_module(32, 64), nn.Identity()]),
-    ])  # fuse[i][j] = i -> j
-    self.gen_block_last = self._upsample_module(32, 1)
+    # self.gen_fuse_blocks = nn.ModuleList([
+    #   nn.ModuleList([nn.Identity(), self._upsample_module(64, 32)]),
+    #   nn.ModuleList([self._downsample_module(32, 64), nn.Identity()]),
+    # ])  # fuse[i][j] = i -> j
+    self.gen_block_last = nn.Linear(1000, (1, 28, 28))
     self.gen_shapes = [
-      [-1, 64, 7, 7],
-      [-1, 32, 14, 14],
+      [-1, 1000],
+      # [-1, 64, 7, 7],
+      # [-1, 32, 14, 14],
     ]  # Shapes of block outputs: The first dimension is the batch size (to be filled in later)
 
     # Build discriminator
-    self.dis_block_first = self._downsample_module(1, 32)
+    self.dis_block_first = nn.Linear((1, 28, 28), 100)
     self.dis_blocks = nn.ModuleList([
       nn.Sequential(
-        conv3x3(32, 32), 
-        nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
-        nn.ReLU()),
-      nn.Sequential(
-        conv3x3(64, 64),
-         nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
-         nn.ReLU()),
+        nn.Linear(100, 100), 
+        # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
+        nn.Tanh()),
+      # nn.Sequential(
+      #   conv3x3(64, 64),
+      #    nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
+      #    nn.ReLU()),
     ])
-    self.dis_fuse_blocks = nn.ModuleList([
-      nn.ModuleList([nn.Identity(), self._downsample_module(32, 64)]),
-      nn.ModuleList([self._upsample_module(64, 32), nn.Identity()]),
-    ])
-    self.dis_block_last = nn.Linear(7 * 7 * 64, 1)
+    # self.dis_fuse_blocks = nn.ModuleList([
+    #   nn.ModuleList([nn.Identity(), self._downsample_module(32, 64)]),
+    #   nn.ModuleList([self._upsample_module(64, 32), nn.Identity()]),
+    # ])
+    self.dis_block_last = nn.Linear(100, 1)
     self.dis_shapes = [
-      [-1, 32, 14, 14],
-      [-1, 64, 7, 7],
+      [-1, 100],
+      # [-1, 32, 14, 14],
+      # [-1, 64, 7, 7],
     ]
 
     self.f_solver = broyden
