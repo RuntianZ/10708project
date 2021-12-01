@@ -65,7 +65,7 @@ class MnistGan(nn.Module):
       nn.Sequential(
         nn.Linear(100, 100), 
         # nn.GroupNorm(num_groups, 32, affine=block_gn_affine),
-        nn.Tanh()),
+        nn.ReLU()),
       # nn.Sequential(
       #   conv3x3(64, 64),
       #    nn.GroupNorm(num_groups, 64, affine=block_gn_affine),
@@ -116,14 +116,14 @@ class MnistGan(nn.Module):
     z_block = []
     for i in range(num_gen_blocks):
       s = self.gen_shapes[0]
-      injection = self.gen_block_first(gen_injection).view(s) if i == 0 else self.gen_fuse_blocks[i-1][i](z_block[i-1])
+      injection = self.gen_block_first(gen_injection).view(s) if i == 0 else 0
       z_block.append(self.gen_blocks[i](z[i] + injection))
 
     dis_injection = torch.cat((self.gen_block_last(z[num_gen_blocks - 1]).view(-1, 1, 28, 28), dis_injection))
     # print(dis_injection.shape)
     for j in range(num_dis_blocks):
       s = self.dis_shapes[0]
-      injection = self.dis_block_first(dis_injection).view(s) if j == 0 else self.dis_fuse_blocks[j-1][j](z_block[j-1+num_gen_blocks])
+      injection = self.dis_block_first(dis_injection.view(-1, 784)).view(s) if j == 0 else 0
       z_block.append(self.dis_blocks[j](z[num_gen_blocks + j] + injection))
 
     

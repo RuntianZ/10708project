@@ -28,8 +28,8 @@ class GanLoss(nn.Module):
       print(x)
       raise RuntimeError
     eps = 1e-8
-    p1 = F.sigmoid(x)
-    p2 = F.sigmoid(-x)
+    p1 = torch.sigmoid(x)
+    p2 = torch.sigmoid(-x)
     loss = y * torch.log(p2 + eps) + (1 - y) * torch.log(p1 + eps)    
     # x0 = x.clone()
     # x0[x0 > self.hinge] = self.hinge
